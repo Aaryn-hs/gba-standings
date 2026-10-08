@@ -176,6 +176,26 @@
   }
   .vs-sm{color:#94a3b8; padding:0 6px;}
 
+  /* ---------- 权限锁定 ---------- */
+  .lockbar{
+    display:flex; align-items:center; gap:12px;
+    padding:12px 14px; margin-bottom:16px;
+    background:#f8fafc; border:1px solid var(--line); border-radius:10px;
+  }
+  .lockbar .state{font-size:12.5px; font-weight:700; padding:4px 12px; border-radius:999px;}
+  .lockbar .state.view{background:#eef2f7; color:#64748b;}
+  .lockbar .state.edit{background:#ecfdf5; color:#047857;}
+  .lockbar .spacer{flex:1;}
+  body.locked input.sc{background:#f1f5f9; color:#94a3b8; cursor:not-allowed;}
+  body.locked .admin-only{display:none !important;}
+  .btn-lock{background:#fff; color:#334155; border:1px solid var(--line);}
+  .btn-lock:hover{background:#f8fafc;}
+  .view-note{
+    margin:0 0 14px; font-size:12.5px; color:var(--muted);
+    background:#eef2f7; border-left:3px solid #94a3b8;
+    border-radius:0 8px 8px 0; padding:9px 13px;
+  }
+
   @media (max-width:760px){
     body{padding:16px 10px 40px;}
     .card{padding:16px 14px;}
@@ -240,9 +260,17 @@
   <!-- 比分录入 -->
   <section class="card no-print">
     <h2>二、比赛结果录入</h2>
-    <p class="hint">在比分框中填入双方得分。两格均已填写即计为「已赛」，参与积分统计；留空即视为未赛，不计入排名。</p>
+    <p class="hint" id="matchHint">在比分框中填入双方得分。两格均已填写即计为「已赛」，参与积分统计；留空即视为未赛，不计入排名。</p>
 
-    <div class="toolbar">
+    <div class="lockbar no-print">
+      <span class="state view" id="lockState">只读模式 · 仅管理员可编辑</span>
+      <span class="spacer"></span>
+      <button class="btn-lock" id="btnLock">🔓 管理员解锁</button>
+      <button class="btn-primary" id="btnPublish" style="display:none;">⬆ 导出发布版</button>
+    </div>
+    <div class="view-note no-print" id="viewNote" style="display:none;">本页为<b>只读发布版</b>：比分由管理员维护并统一发布，您看到的是最新公布结果。如需更正请联系管理员。</div>
+
+    <div class="toolbar admin-only">
       <div class="grp">
         <label>积分规则</label>
         <label>胜</label><input type="number" id="ptWin" value="2" min="0" max="5">
@@ -312,8 +340,12 @@ const MATCHES = [
 ];
 
 const STORAGE_KEY = "gba11_results_v1";
+const EMBEDDED_RESULTS = "__PUBLISHED_DATA__";  /* 部署时由「导出发布版」烘焙为最新比分 JSON */
+const EMBEDDED_PTS = "__PUBLISHED_PTS__";        /* 部署时烘焙为积分规则 JSON */
+const ADMIN_PASS = "gba1120";                    /* 管理员解锁密码，可在此自行修改（仅客户端软限制，非真安全） */
 let results = {};   /* { matchId: {h:number|null, a:number|null} } */
 let ptsCfg = {win:2, draw:1, loss:0};
+let isUnlocked = false;
 
 /* ===================== 持久化 ===================== */
 function save(){
@@ -322,13 +354,18 @@ function save(){
   }catch(e){}
 }
 function load(){
+  /* 优先使用本机已保存数据；无则回落到部署时烘焙的「发布版」比分 */
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return;
-    const d = JSON.parse(raw);
-    if(d.results) results = d.results;
-    if(d.ptsCfg) ptsCfg = Object.assign(ptsCfg, d.ptsCfg);
+    if(raw){
+      const d = JSON.parse(raw);
+      if(d.results) results = d.results;
+      if(d.ptsCfg) ptsCfg = Object.assign(ptsCfg, d.ptsCfg);
+      return;
+    }
   }catch(e){}
+  try{ const er = JSON.parse(EMBEDDED_RESULTS); if(er && typeof er === "object") results = er; }catch(e){}
+  try{ const ep = JSON.parse(EMBEDDED_PTS); if(ep && typeof ep === "object") ptsCfg = Object.assign(ptsCfg, ep); }catch(e){}
 }
 
 /* ===================== 渲染：比分录入 ===================== */
@@ -609,12 +646,56 @@ function bindToolbar(){
   });
 }
 
+/* ===================== 权限锁定 ===================== */
+function setLock(unlocked){
+  isUnlocked = unlocked;
+  document.body.classList.toggle("locked", !unlocked);
+  document.querySelectorAll("input.sc, #ptWin, #ptDraw, #ptLoss").forEach(i => i.disabled = !unlocked);
+  const st = document.getElementById("lockState");
+  st.textContent = unlocked ? "编辑模式（管理员）" : "只读模式 · 仅管理员可编辑";
+  st.className = "state " + (unlocked ? "edit" : "view");
+  document.getElementById("btnLock").textContent = unlocked ? "🔒 锁定" : "🔓 管理员解锁";
+  document.getElementById("btnPublish").style.display = unlocked ? "" : "none";
+  document.getElementById("viewNote").style.display = unlocked ? "none" : "";
+  document.getElementById("matchHint").innerHTML = unlocked
+    ? '在比分框中填入双方得分。两格均已填写即计为「已赛」，参与积分统计；留空即视为未赛，不计入排名。'
+    : '本页为<b>只读发布版</b>：比分由管理员维护并统一发布，您看到的是最新公布结果。如需更正请联系管理员。';
+}
+
+function initLock(){
+  document.getElementById("btnLock").addEventListener("click", () => {
+    if(isUnlocked){ setLock(false); return; }
+    const p = prompt("请输入管理员密码以解锁编辑：");
+    if(p === null) return;
+    if(p === ADMIN_PASS){ setLock(true); }
+    else { alert("密码错误，无法解锁编辑。"); }
+  });
+  document.getElementById("btnPublish").addEventListener("click", publishExport);
+  setLock(false);  /* 默认只读，所有人只能看 */
+}
+
+function publishExport(){
+  const data = JSON.stringify(results);
+  const pts = JSON.stringify(ptsCfg);
+  let src = document.documentElement.outerHTML;
+  src = src.replace('"__PUBLISHED_DATA__"', data);
+  src = src.replace('"__PUBLISHED_PTS__"', pts);
+  const blob = new Blob([src], {type:"text/html;charset=utf-8;"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "index.html";
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(a.href);
+  alert("已生成发布版 index.html（已含最新比分，且默认只读）。\n\n请把这个文件发给我（夜宵），我推送到 GitHub 后，所有人打开链接即看到最新榜。\n你也可以自行覆盖仓库里的 index.html 后 push。");
+}
+
 /* ===================== 启动 ===================== */
 load();
 renderMatches();
 renderSchedule();
 bindToolbar();
 renderStandings();
+initLock();
 </script>
 </body>
 </html>
