@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>金牌家居第11届GBA篮球联赛 · 积分与比分统计表</title>
+<style>
+  :root{
+    --bg:#f4f6f9;
+    --card:#ffffff;
+    --line:#e5e9f0;
+    --line-soft:#eef1f6;
+    --text:#1e293b;
+    --muted:#6b7280;
+    --accent:#1d4ed8;
+    --accent-soft:#eef3ff;
+    --pos:#dc2626;
+    --neg:#16a34a;
+    --zero:#6b7280;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:28px 20px 60px;
+    background:var(--bg); color:var(--text);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:14px; line-height:1.6;
+  }
+  .wrap{max-width:1180px; margin:0 auto;}
+
+  /* ---------- 页头 ---------- */
+  header.page{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px 26px; margin-bottom:18px;
+    box-shadow:0 1px 3px rgba(15,23,42,.05);
+  }
+  header.page h1{
+    margin:0; font-size:22px; font-weight:700; letter-spacing:.5px;
+  }
+  header.page .sub{
+    margin-top:6px; color:var(--muted); font-size:13px;
+  }
+  .meta-row{
+    margin-top:14px; display:flex; flex-wrap:wrap; gap:10px;
+  }
+  .chip{
+    display:inline-flex; align-items:center; gap:6px;
+    background:#f8fafc; border:1px solid var(--line);
+    border-radius:999px; padding:4px 12px; font-size:12.5px; color:#334155;
+  }
+  .chip b{color:var(--accent); font-weight:700;}
+
+  /* ---------- 卡片 ---------- */
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:20px 22px; margin-bottom:18px;
+    box-shadow:0 1px 3px rgba(15,23,42,.05);
+  }
+  .card > h2{
+    margin:0 0 4px; font-size:16px; font-weight:700;
+    display:flex; align-items:center; gap:9px;
+  }
+  .card > h2::before{
+    content:""; width:4px; height:16px; border-radius:2px; background:var(--accent);
+  }
+  .card .hint{margin:2px 0 16px; color:var(--muted); font-size:12.5px;}
+
+  /* ---------- 工具栏 ---------- */
+  .toolbar{
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+    padding-bottom:16px; margin-bottom:16px; border-bottom:1px dashed var(--line);
+  }
+  .toolbar .grp{
+    display:flex; align-items:center; gap:6px;
+    background:#f8fafc; border:1px solid var(--line);
+    border-radius:9px; padding:6px 10px; font-size:12.5px;
+  }
+  .toolbar .grp label{color:#475569;}
+  .toolbar input[type=number]{
+    width:46px; border:1px solid var(--line); border-radius:6px;
+    padding:3px 5px; text-align:center; font-size:13px; color:var(--text);
+    background:#fff;
+  }
+  button{
+    font-family:inherit; font-size:13px; cursor:pointer;
+    border-radius:9px; padding:7px 15px; border:1px solid transparent;
+    transition:all .15s;
+  }
+  .btn-primary{background:var(--accent); color:#fff; border-color:var(--accent);}
+  .btn-primary:hover{background:#1740b8;}
+  .btn-ghost{background:#fff; color:#334155; border-color:var(--line);}
+  .btn-ghost:hover{background:#f8fafc; border-color:#cbd5e1;}
+  .spacer{flex:1;}
+
+  /* ---------- 通用表格 ---------- */
+  table{width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums;}
+  thead th{
+    background:#eef2f7; color:#1e293b; font-weight:700; font-size:13px;
+    text-align:left; padding:10px 10px; border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:9px 10px; border-bottom:1px solid var(--line-soft); font-size:13.5px;
+  }
+  tbody tr:hover{background:#fafcff;}
+  .num{text-align:center;}
+  .round-label{
+    background:#f8fafc; color:var(--muted); font-size:12.5px; font-weight:700;
+    padding:7px 10px; letter-spacing:.4px;
+  }
+
+  /* ---------- 比分录入 ---------- */
+  .match-grid{
+    display:grid; grid-template-columns:96px 1fr; align-items:center; gap:6px;
+  }
+  .m-date{color:var(--muted); font-size:12.5px; white-space:nowrap;}
+  .m-date b{color:#334155; font-weight:600;}
+  .score-cell{display:flex; align-items:center; justify-content:center; gap:8px;}
+  .t-name{flex:1; font-size:13.5px;}
+  .t-name.home{text-align:right; color:#1e293b;}
+  .t-name.away{text-align:left; color:#1e293b;}
+  .sc{
+    width:52px; padding:5px 4px; text-align:center; font-size:14px; font-weight:700;
+    border:1px solid var(--line); border-radius:7px; background:#fff; color:var(--text);
+    font-variant-numeric:tabular-nums;
+  }
+  .sc:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(29,78,216,.12);}
+  .sc.filled{background:#f2f6ff; border-color:#c7d7f7;}
+  .vs{color:#94a3b8; font-size:12px; font-weight:700;}
+
+  /* ---------- 积分榜 ---------- */
+  #standings th, #standings td{border-bottom:1px solid var(--line-soft);}
+  #standings th.col-rank, #standings td.col-rank{width:56px;}
+  #standings tbody tr.qualify td{background:#f7faff;}
+  #standings tbody tr.qualify:hover td{background:#f0f6ff;}
+  #standings tbody td.team-cell{
+    font-weight:600; position:relative; padding-left:14px;
+  }
+  .rank-badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:26px; height:26px; border-radius:8px;
+    font-size:13px; font-weight:700;
+    background:#eef2f7; color:#475569;
+  }
+  .rank-badge.top{background:var(--accent); color:#fff;}
+  .tag{
+    display:inline-block; margin-left:8px; font-size:11px;
+    color:var(--accent); background:var(--accent-soft);
+    border:1px solid #d5e2ff; border-radius:5px; padding:1px 6px; font-weight:600;
+  }
+  .pts{font-weight:700; color:var(--accent); font-size:15px;}
+  .gd-pos{color:var(--pos); font-weight:700;}
+  .gd-neg{color:var(--neg); font-weight:700;}
+  .gd-zero{color:var(--zero);}
+  .total-row td{
+    background:#f8fafc; font-weight:700; color:#334155; border-top:1px solid var(--line);
+  }
+  .legend{
+    margin-top:14px; display:flex; flex-wrap:wrap; gap:16px;
+    font-size:12.5px; color:var(--muted);
+  }
+  .legend i{font-style:normal; font-weight:700; margin-right:4px;}
+  .legend .k1{color:var(--accent);}
+  .legend .k2{color:var(--pos);}
+  .legend .k3{color:var(--neg);}
+  .tie-note{
+    margin-top:10px; font-size:12.5px; color:var(--muted);
+    background:#f8fafc; border-left:3px solid var(--accent);
+    border-radius:0 8px 8px 0; padding:9px 13px;
+  }
+
+  /* ---------- 赛程 ---------- */
+  .sched td:nth-child(1){text-align:center; color:var(--muted);}
+  .sched .grp-cell{
+    text-align:center; color:#334155; font-weight:600;
+    background:#fafbfd; vertical-align:middle;
+  }
+  .vs-sm{color:#94a3b8; padding:0 6px;}
+
+  @media (max-width:760px){
+    body{padding:16px 10px 40px;}
+    .card{padding:16px 14px;}
+    .toolbar{gap:8px;}
+    .spacer{display:none;}
+    .m-date{font-size:11.5px;}
+    .t-name{font-size:12.5px;}
+    thead th, tbody td{padding:8px 6px; font-size:12.5px;}
+  }
+  @media print{
+    body{background:#fff; padding:0;}
+    .toolbar, .no-print{display:none !important;}
+    .card{box-shadow:none; break-inside:avoid;}
+    tbody tr{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <h1>金牌家居第11届 GBA 篮球联赛 · 积分与比分统计表</h1>
+    <div class="sub">赛制：6 队单循环，共 15 场（每队 5 场）｜前四名进入淘汰赛（1st vs 4th、2nd vs 3rd）</div>
+    <div class="meta-row">
+      <span class="chip">参赛队伍 <b>6</b> 支</span>
+      <span class="chip">循环赛 <b>15</b> 场</span>
+      <span class="chip">已录入 <b id="chipDone">0</b> / 15 场</span>
+      <span class="chip">排序规则 <b>积分 → 净胜球 → 进球数</b></span>
+    </div>
+  </header>
+
+  <!-- 积分榜 -->
+  <section class="card">
+    <h2>一、积分榜</h2>
+    <p class="hint">按积分降序排列；积分相同时依次比较净胜球、进球数。录入下半部分的比分后，本表自动实时更新。</p>
+    <table id="standings">
+      <thead>
+        <tr>
+          <th class="col-rank num">排名</th>
+          <th>队伍</th>
+          <th class="num">场次</th>
+          <th class="num">胜</th>
+          <th class="num">平</th>
+          <th class="num">负</th>
+          <th class="num">进球数</th>
+          <th class="num">失球数</th>
+          <th class="num">净胜球</th>
+          <th class="num">总积分</th>
+        </tr>
+      </thead>
+      <tbody id="standingBody"></tbody>
+      <tfoot id="standingFoot"></tfoot>
+    </table>
+    <div class="legend">
+      <span><i class="k1">▎</i>深色标记 = 前四名（晋级淘汰赛）</span>
+      <span><i class="k2">+</i>净胜球为正</span>
+      <span><i class="k3">−</i>净胜球为负</span>
+    </div>
+    <div class="tie-note" id="tieNote"></div>
+  </section>
+
+  <!-- 比分录入 -->
+  <section class="card no-print">
+    <h2>二、比赛结果录入</h2>
+    <p class="hint">在比分框中填入双方得分。两格均已填写即计为「已赛」，参与积分统计；留空即视为未赛，不计入排名。</p>
+
+    <div class="toolbar">
+      <div class="grp">
+        <label>积分规则</label>
+        <label>胜</label><input type="number" id="ptWin" value="2" min="0" max="5">
+        <label>平</label><input type="number" id="ptDraw" value="1" min="0" max="5">
+        <label>负</label><input type="number" id="ptLoss" value="0" min="0" max="5">
+      </div>
+      <div class="spacer"></div>
+      <button class="btn-ghost" id="btnDemo">载入示例数据</button>
+      <button class="btn-ghost" id="btnClear">清空全部</button>
+      <button class="btn-ghost" id="btnCsv">导出 CSV</button>
+      <button class="btn-primary" id="btnPrint">打印 / 存 PDF</button>
+    </div>
+
+    <table id="matchTable">
+      <thead>
+        <tr>
+          <th class="num" style="width:52px;">序号</th>
+          <th style="width:104px;">日期</th>
+          <th style="width:120px;">时间</th>
+          <th>比分</th>
+        </tr>
+      </thead>
+      <tbody id="matchBody"></tbody>
+    </table>
+  </section>
+
+  <!-- 赛程表 -->
+  <section class="card">
+    <h2>三、原始赛程表</h2>
+    <p class="hint">依据赛事组委会公布赛程整理，供核对录入。</p>
+    <table class="sched">
+      <thead>
+        <tr>
+          <th class="num" style="width:52px;">序号</th>
+          <th style="width:96px;">轮数</th>
+          <th style="width:96px;">日期</th>
+          <th style="width:130px;">时间</th>
+          <th>对阵表</th>
+        </tr>
+      </thead>
+      <tbody id="schedBody"></tbody>
+    </table>
+  </section>
+
+</div>
+
+<script>
+/* ===================== 基础数据 ===================== */
+const TEAMS = ["制造+研发联队","零售事业群中心","行政职能中心","精装事业中心","集团+数字联队","事业群中心"];
+
+const MATCHES = [
+  {id:1,  round:"第一轮", date:"10.19", time:"18:00-19:15", home:"制造+研发联队",   away:"零售事业群中心"},
+  {id:2,  round:"第一轮", date:"10.19", time:"19:30-20:45", home:"行政职能中心",     away:"精装事业中心"},
+  {id:3,  round:"第一轮", date:"10.20", time:"18:00-19:15", home:"集团+数字联队",    away:"事业群中心"},
+  {id:4,  round:"第二轮", date:"10.22", time:"18:00-19:15", home:"行政职能中心",     away:"集团+数字联队"},
+  {id:5,  round:"第二轮", date:"10.22", time:"19:30-20:45", home:"零售事业群中心",   away:"事业群中心"},
+  {id:6,  round:"第二轮", date:"10.23", time:"18:00-19:15", home:"制造+研发联队",   away:"精装事业中心"},
+  {id:7,  round:"第三轮", date:"10.26", time:"18:00-19:15", home:"精装事业中心",     away:"零售事业群中心"},
+  {id:8,  round:"第三轮", date:"10.26", time:"19:30-20:45", home:"行政职能中心",     away:"事业群中心"},
+  {id:9,  round:"第三轮", date:"10.27", time:"18:00-19:15", home:"集团+数字联队",    away:"制造+研发联队"},
+  {id:10, round:"第四轮", date:"10.29", time:"18:00-19:15", home:"行政职能中心",     away:"零售事业群中心"},
+  {id:11, round:"第四轮", date:"10.29", time:"19:30-20:45", home:"集团+数字联队",    away:"精装事业中心"},
+  {id:12, round:"第四轮", date:"10.30", time:"18:00-19:15", home:"制造+研发联队",   away:"事业群中心"},
+  {id:13, round:"第五轮", date:"11.2",  time:"18:00-19:15", home:"集团+数字联队",    away:"零售事业群中心"},
+  {id:14, round:"第五轮", date:"11.2",  time:"19:30-20:45", home:"制造+研发联队",   away:"行政职能中心"},
+  {id:15, round:"第五轮", date:"11.3",  time:"18:00-19:15", home:"精装事业中心",     away:"事业群中心"}
+];
+
+const STORAGE_KEY = "gba11_results_v1";
+let results = {};   /* { matchId: {h:number|null, a:number|null} } */
+let ptsCfg = {win:2, draw:1, loss:0};
+
+/* ===================== 持久化 ===================== */
+function save(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({results, ptsCfg}));
+  }catch(e){}
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const d = JSON.parse(raw);
+    if(d.results) results = d.results;
+    if(d.ptsCfg) ptsCfg = Object.assign(ptsCfg, d.ptsCfg);
+  }catch(e){}
+}
+
+/* ===================== 渲染：比分录入 ===================== */
+function renderMatches(){
+  const body = document.getElementById("matchBody");
+  body.innerHTML = "";
+  let lastRound = null;
+
+  MATCHES.forEach(m => {
+    if(m.round !== lastRound){
+      lastRound = m.round;
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 4; td.className = "round-label";
+      td.textContent = m.round + "　·　" + roundRange(m.round);
+      tr.appendChild(td); body.appendChild(tr);
+    }
+
+    const r = results[m.id] || {};
+    const tr = document.createElement("tr");
+
+    tr.innerHTML =
+      '<td class="num" style="color:#94a3b8;">' + m.id + '</td>' +
+      '<td><div class="m-date"><b>' + m.date + '</b></div></td>' +
+      '<td><div class="m-date">' + m.time + '</div></td>' +
+      '<td>' +
+        '<div class="score-cell">' +
+          '<span class="t-name home">' + m.home + '</span>' +
+          '<input class="sc" type="number" min="0" step="1" inputmode="numeric" ' +
+                 'data-id="' + m.id + '" data-side="h" value="' + (r.h ?? "") + '">' +
+          '<span class="vs">:</span>' +
+          '<input class="sc" type="number" min="0" step="1" inputmode="numeric" ' +
+                 'data-id="' + m.id + '" data-side="a" value="' + (r.a ?? "") + '">' +
+          '<span class="t-name away">' + m.away + '</span>' +
+        '</div>' +
+      '</td>';
+    body.appendChild(tr);
+  });
+
+  body.querySelectorAll("input.sc").forEach(inp => {
+    inp.addEventListener("input", onScoreInput);
+    inp.addEventListener("focus", e => e.target.select());
+  });
+
+  syncFilledClass();
+}
+
+function roundRange(round){
+  const ds = MATCHES.filter(m => m.round === round).map(m => m.date);
+  const uniq = [...new Set(ds)];
+  return uniq.length > 1 ? uniq.join(" ~ ") : uniq[0];
+}
+
+function onScoreInput(e){
+  const id = Number(e.target.dataset.id);
+  const side = e.target.dataset.side;
+  let v = e.target.value.trim();
+  if(v === ""){ v = null; }
+  else{
+    v = parseInt(v, 10);
+    if(isNaN(v) || v < 0) v = 0;
+    v = Math.min(v, 999);
+  }
+  results[id] = results[id] || {h:null, a:null};
+  results[id][side] = v;
+
+  e.target.classList.toggle("filled", v !== null);
+  save();
+  renderStandings();
+}
+
+function syncFilledClass(){
+  document.querySelectorAll("input.sc").forEach(inp => {
+    const v = inp.value.trim();
+    inp.classList.toggle("filled", v !== "");
+  });
+}
+
+/* ===================== 计算 ===================== */
+function computeStandings(){
+  const st = {};
+  TEAMS.forEach(t => st[t] = {team:t, p:0, w:0, d:0, l:0, gf:0, ga:0, gd:0, pts:0});
+
+  MATCHES.forEach(m => {
+    const r = results[m.id];
+    if(!r || r.h === null || r.h === undefined || r.a === null || r.a === undefined) return;
+    const H = st[m.home], A = st[m.away];
+    H.p++; A.p++;
+    H.gf += r.h; H.ga += r.a;
+    A.gf += r.a; A.ga += r.h;
+    if(r.h > r.a){ H.w++; A.l++; H.pts += ptsCfg.win; A.pts += ptsCfg.loss; }
+    else if(r.h < r.a){ A.w++; H.l++; A.pts += ptsCfg.win; H.pts += ptsCfg.loss; }
+    else { H.d++; A.d++; H.pts += ptsCfg.draw; A.pts += ptsCfg.draw; }
+  });
+
+  Object.values(st).forEach(s => s.gd = s.gf - s.ga);
+
+  const arr = Object.values(st);
+  arr.sort((x,y) =>
+    y.pts - x.pts ||
+    y.gd - x.gd ||
+    y.gf - x.gf ||
+    x.team.localeCompare(y.team, "zh")
+  );
+  return arr;
+}
+
+/* ===================== 渲染：积分榜 ===================== */
+function renderStandings(){
+  const arr = computeStandings();
+  const body = document.getElementById("standingBody");
+  body.innerHTML = "";
+
+  const totals = {p:0, w:0, d:0, l:0, gf:0, ga:0, gd:0, pts:0};
+
+  arr.forEach((s, i) => {
+    const rank = i + 1;
+    const tr = document.createElement("tr");
+    if(rank <= 4) tr.className = "qualify";
+
+    const gdCls = s.gd > 0 ? "gd-pos" : (s.gd < 0 ? "gd-neg" : "gd-zero");
+    const gdTxt = s.gd > 0 ? "+" + s.gd : String(s.gd);
+    const tag = rank <= 4 ? '<span class="tag">晋级区</span>' : "";
+
+    tr.innerHTML =
+      '<td class="num col-rank"><span class="rank-badge ' + (rank <= 4 ? "top" : "") + '">' + rank + '</span></td>' +
+      '<td class="team-cell">' + s.team + tag + '</td>' +
+      '<td class="num">' + s.p + '</td>' +
+      '<td class="num">' + s.w + '</td>' +
+      '<td class="num">' + s.d + '</td>' +
+      '<td class="num">' + s.l + '</td>' +
+      '<td class="num">' + s.gf + '</td>' +
+      '<td class="num">' + s.ga + '</td>' +
+      '<td class="num ' + gdCls + '">' + gdTxt + '</td>' +
+      '<td class="num"><span class="pts">' + s.pts + '</span></td>';
+
+    body.appendChild(tr);
+
+    totals.p += s.p; totals.w += s.w; totals.d += s.d; totals.l += s.l;
+    totals.gf += s.gf; totals.ga += s.ga; totals.gd += s.gd; totals.pts += s.pts;
+  });
+
+  const foot = document.getElementById("standingFoot");
+  foot.innerHTML =
+    '<tr class="total-row">' +
+      '<td class="num col-rank">—</td>' +
+      '<td>合计 / 场均</td>' +
+      '<td class="num">' + totals.p + '</td>' +
+      '<td class="num">' + totals.w + '</td>' +
+      '<td class="num">' + totals.d + '</td>' +
+      '<td class="num">' + totals.l + '</td>' +
+      '<td class="num">' + totals.gf + '</td>' +
+      '<td class="num">' + totals.ga + '</td>' +
+      '<td class="num">' + (totals.gd > 0 ? "+" + totals.gd : totals.gd) + '</td>' +
+      '<td class="num">' + totals.pts + '</td>' +
+    '</tr>';
+
+  /* 顶部统计条 */
+  const done = MATCHES.filter(m => {
+    const r = results[m.id];
+    return r && r.h !== null && r.h !== undefined && r.a !== null && r.a !== undefined;
+  }).length;
+  document.getElementById("chipDone").textContent = done;
+
+  /* 同分说明 */
+  const tieNote = document.getElementById("tieNote");
+  const played = done > 0;
+  if(!played){
+    tieNote.innerHTML = '当前尚无已录比分，积分榜为初始状态。在下方「比赛结果录入」填写任意比分后，本榜将自动重算并排序。';
+  }else{
+    const tieGroups = [];
+    let cur = [arr[0]];
+    for(let i = 1; i < arr.length; i++){
+      if(arr[i].pts === cur[0].pts) cur.push(arr[i]);
+      else { if(cur.length > 1) tieGroups.push(cur); cur = [arr[i]]; }
+    }
+    if(cur.length > 1) tieGroups.push(cur);
+    if(tieGroups.length === 0){
+      tieNote.innerHTML = '已录入 <b>' + done + '</b> / 15 场。当前全部队伍积分互不相同，无需启用净胜球 / 进球数比较。';
+    }else{
+      const parts = tieGroups.map(g =>
+        g.map(s => s.team + '（净胜球 ' + (s.gd > 0 ? "+" + s.gd : s.gd) + '，进球 ' + s.gf + '）').join(' 与 ')
+      );
+      tieNote.innerHTML = '已录入 <b>' + done + '</b> / 15 场。以下存在积分相同的队伍，已依次按净胜球、进球数排序：<br>' +
+        parts.map(p => '· ' + p).join('<br>');
+    }
+  }
+}
+
+/* ===================== 渲染：原始赛程 ===================== */
+function renderSchedule(){
+  const body = document.getElementById("schedBody");
+  body.innerHTML = "";
+
+  MATCHES.forEach((m, i) => {
+    const prev = MATCHES[i - 1];
+
+    const isRoundStart = !prev || prev.round !== m.round;
+    const isDateStart  = isRoundStart || prev.date !== m.date;
+
+    const roundSpan = MATCHES.filter(x => x.round === m.round).length;
+    const dateSpan  = MATCHES.filter(x => x.round === m.round && x.date === m.date).length;
+
+    const tr = document.createElement("tr");
+    let html = '<td class="num">' + m.id + '</td>';
+
+    if(isRoundStart){
+      html += '<td class="grp-cell" rowspan="' + roundSpan + '">' + m.round + '</td>';
+    }
+    if(isDateStart){
+      html += '<td class="grp-cell date-cell" rowspan="' + dateSpan + '">' + m.date + '</td>';
+    }
+
+    html += '<td>' + m.time + '</td>' +
+            '<td>' + m.home + '<span class="vs-sm">VS</span>' + m.away + '</td>';
+
+    tr.innerHTML = html;
+    body.appendChild(tr);
+  });
+}
+
+/* ===================== 工具栏 ===================== */
+function bindToolbar(){
+  ["ptWin","ptDraw","ptLoss"].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = id === "ptWin" ? ptsCfg.win : (id === "ptDraw" ? ptsCfg.draw : ptsCfg.loss);
+    el.addEventListener("input", () => {
+      const v = parseInt(el.value, 10);
+      const val = (isNaN(v) || v < 0) ? 0 : Math.min(v, 5);
+      if(id === "ptWin") ptsCfg.win = val;
+      if(id === "ptDraw") ptsCfg.draw = val;
+      if(id === "ptLoss") ptsCfg.loss = val;
+      save();
+      renderStandings();
+    });
+  });
+
+  document.getElementById("btnClear").addEventListener("click", () => {
+    if(!confirm("确认清空全部已录入的比分？此操作不可撤销。")) return;
+    results = {};
+    save();
+    document.querySelectorAll("input.sc").forEach(i => { i.value = ""; i.classList.remove("filled"); });
+    renderStandings();
+  });
+
+  document.getElementById("btnDemo").addEventListener("click", () => {
+    const demo = {
+      1:[88,76], 2:[81,81], 3:[95,70], 4:[73,79], 5:[84,88],
+      6:[90,66], 7:[77,80], 8:[86,74], 9:[92,85], 10:[79,83],
+      11:[94,72], 12:[87,89], 13:[76,71], 14:[69,74], 15:[91,78]
+    };
+    results = {};
+    Object.keys(demo).forEach(k => {
+      results[k] = {h: demo[k][0], a: demo[k][1]};
+      document.querySelectorAll('input.sc[data-id="' + k + '"]').forEach(inp => {
+        const side = inp.dataset.side;
+        inp.value = side === "h" ? demo[k][0] : demo[k][1];
+        inp.classList.add("filled");
+      });
+    });
+    save();
+    renderStandings();
+  });
+
+  document.getElementById("btnPrint").addEventListener("click", () => window.print());
+
+  document.getElementById("btnCsv").addEventListener("click", () => {
+    const arr = computeStandings();
+    const rows = [["排名","队伍","场次","胜","平","负","进球数","失球数","净胜球","总积分"]];
+    arr.forEach((s, i) => rows.push([i + 1, s.team, s.p, s.w, s.d, s.l, s.gf, s.ga, s.gd, s.pts]));
+    const csv = "\uFEFF" + rows.map(r => r.join(",")).join("\r\n");
+    const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "GBA第11届_积分榜.csv";
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(a.href);
+  });
+}
+
+/* ===================== 启动 ===================== */
+load();
+renderMatches();
+renderSchedule();
+bindToolbar();
+renderStandings();
+</script>
+</body>
+</html>
